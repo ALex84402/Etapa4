@@ -28,7 +28,7 @@ try {
     }
     echo "</table>";
     
-    echo '<p><a href="logout.php">Cerrar sesión</a></p>';
+    echo '<p><a href="archivos.php">Servidor de archivos</a> | <a href="logout.php">Cerrar sesión</a></p>';
 
 } catch (PDOException $e) {
     echo "Error en la conexión: " . $e->getMessage();

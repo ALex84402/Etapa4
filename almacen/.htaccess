@@ -1,0 +1,9 @@
+# Nadie puede acceder directamente a los archivos guardados.
+# Las descargas pasan siempre por descargar.php (que exige sesión).
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

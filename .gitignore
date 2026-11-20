@@ -1,0 +1,5 @@
+# Archivos subidos por los usuarios (no se versionan)
+almacen/archivos/*
+almacen/temporal/*
+!almacen/archivos/.gitkeep
+!almacen/temporal/.gitkeep
