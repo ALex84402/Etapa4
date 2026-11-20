@@ -58,8 +58,12 @@ function e($s) { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
         <h2>Subir archivos</h2>
         <div class="zona" id="zona">
             Arrastra archivos aquí o haz clic para elegirlos<br>
-            <small>Máximo <?= e(formatear_tamano(TAMANO_MAXIMO)) ?> por archivo · se suben por partes y se reanudan si se corta la conexión</small>
-            <input type="file" id="selector" multiple hidden>
+            <small>
+                <?= TAMANO_MAXIMO > 0 ? 'Máximo ' . e(formatear_tamano(TAMANO_MAXIMO)) . ' por archivo' : 'Sin límite de tamaño (solo el espacio en disco)' ?>
+                <?= EXTENSIONES_PERMITIDAS ? ' · solo ' . e(implode(', ', EXTENSIONES_PERMITIDAS)) : '' ?>
+                · se suben por partes y se reanudan si se corta la conexión
+            </small>
+            <input type="file" id="selector" multiple hidden<?= EXTENSIONES_PERMITIDAS ? ' accept="' . e(implode(',', array_map(fn($x) => '.' . $x, EXTENSIONES_PERMITIDAS))) . '"' : '' ?>>
         </div>
         <div class="cola" id="cola"></div>
 
@@ -112,6 +116,12 @@ function tam(b) {
     const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0;
     while (b >= 1024 && i < u.length - 1) { b /= 1024; i++; }
     return b.toFixed(i ? 1 : 0) + ' ' + u[i];
+}
+
+function tiempo(s) {
+    if (!isFinite(s)) return '...';
+    const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+    return h ? h + ' h ' + m + ' min' : m ? m + ' min' : Math.ceil(s) + ' s';
 }
 
 function agregar(lista) {
@@ -179,7 +189,8 @@ async function subir(archivo, el) {
         const pct = offset / archivo.size * 100;
         const vel = offset / ((Date.now() - t0) / 1000);
         barra.value = pct;
-        est.textContent = pct.toFixed(1) + '% · ' + tam(vel) + '/s';
+        const resta = (archivo.size - offset) / vel;
+        est.textContent = pct.toFixed(1) + '% · ' + tam(offset) + ' de ' + tam(archivo.size) + ' · ' + tam(vel) + '/s · quedan ' + tiempo(resta);
     }
     barra.value = 100;
     est.textContent = 'Completado';

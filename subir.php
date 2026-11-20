@@ -22,12 +22,16 @@ if ($accion === 'iniciar') {
     $nombre = limpiar_nombre($_POST['nombre'] ?? '');
     $tamano = filter_var($_POST['tamano'] ?? '', FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
     if ($tamano === false) responder(['error' => 'Tamaño inválido'], 400);
-    if ($tamano > TAMANO_MAXIMO) {
+    if (!extension_permitida($nombre)) {
+        responder(['error' => 'Tipo de archivo no permitido. Solo: ' . implode(', ', EXTENSIONES_PERMITIDAS)], 415);
+    }
+    if (TAMANO_MAXIMO > 0 && $tamano > TAMANO_MAXIMO) {
         responder(['error' => 'El archivo supera el máximo de ' . formatear_tamano(TAMANO_MAXIMO)], 413);
     }
     $libre = @disk_free_space(DIR_ARCHIVOS);
     if ($libre !== false && $tamano > $libre - ESPACIO_RESERVADO) {
-        responder(['error' => 'No hay espacio suficiente en el disco'], 507);
+        responder(['error' => 'No hay espacio suficiente en el disco: el archivo ocupa '
+            . formatear_tamano($tamano) . ' y hay ' . formatear_tamano(max(0, $libre - ESPACIO_RESERVADO)) . ' disponibles'], 507);
     }
 
     $id = bin2hex(random_bytes(16));

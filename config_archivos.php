@@ -5,8 +5,19 @@
 define('DIR_ARCHIVOS', __DIR__ . '/almacen/archivos');
 define('DIR_TEMPORAL', __DIR__ . '/almacen/temporal');
 
-// Tamaño máximo por archivo: 20 GB. Ajústalo a tu disco.
-define('TAMANO_MAXIMO', 20 * 1024 * 1024 * 1024);
+// Tamaño máximo por archivo. 0 = sin límite (solo lo limita el espacio libre en disco).
+// Ejemplo para limitar a 100 GB: 100 * 1024 * 1024 * 1024
+define('TAMANO_MAXIMO', 0);
+
+// Extensiones permitidas. Vacío = cualquier tipo de archivo.
+// Ejemplo para aceptar solo zip: ['zip']
+define('EXTENSIONES_PERMITIDAS', []);
+
+// Los archivos de más de 2 GB necesitan PHP de 64 bits.
+if (PHP_INT_SIZE < 8) {
+    http_response_code(500);
+    exit('Este servidor de archivos necesita PHP de 64 bits para manejar archivos de más de 2 GB.');
+}
 
 // Espacio libre que siempre se deja en el disco: 1 GB.
 define('ESPACIO_RESERVADO', 1024 * 1024 * 1024);
@@ -23,10 +34,12 @@ function ini_a_bytes($valor) {
     return (int) $num;
 }
 
-// Tamaño de cada trozo: el menor entre 8 MB y los límites de PHP,
+// Tamaño de cada trozo: el menor entre 64 MB y los límites de PHP,
 // así funciona aunque upload_max_filesize sea pequeño (2 MB por defecto).
+// El .htaccess y .user.ini de la raíz suben esos límites a 100 MB para que
+// un archivo de 50 GB se envíe en ~800 partes en lugar de ~26.000.
 function tamano_trozo() {
-    $limites = [8 * 1024 * 1024];
+    $limites = [64 * 1024 * 1024];
     foreach (['upload_max_filesize', 'post_max_size'] as $clave) {
         $b = ini_a_bytes(ini_get($clave));
         if ($b > 0) $limites[] = $b;
@@ -76,6 +89,12 @@ function exigir_sesion($json = false) {
     if (empty($_SESSION['csrf'])) {
         $_SESSION['csrf'] = bin2hex(random_bytes(32));
     }
+}
+
+function extension_permitida($nombre) {
+    if (!EXTENSIONES_PERMITIDAS) return true;
+    $ext = strtolower(pathinfo($nombre, PATHINFO_EXTENSION));
+    return in_array($ext, array_map('strtolower', EXTENSIONES_PERMITIDAS), true);
 }
 
 function verificar_csrf($token) {
